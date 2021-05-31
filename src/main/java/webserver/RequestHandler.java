@@ -1,16 +1,17 @@
 package webserver;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.IOUtils;
+
+import java.io.*;
+import java.net.Socket;
+import java.util.Optional;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
+    private static final String indexPage = "/index.html";
+    private static final LogicMapper logicMapper = new LogicMapper();
 
     private Socket connection;
 
@@ -19,18 +20,65 @@ public class RequestHandler extends Thread {
     }
 
     public void run() {
-        log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(),
-                connection.getPort());
+        log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(), connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-            // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
+            HttpRequest httpRequest = getHttpRequest(in);
+            RequestType rt = getRequestType(httpRequest);
+            byte[] responseBody = {};
+
+            switch (rt) {
+                case REQUEST_FILE:
+                    responseBody = getRequestFile(httpRequest.getRequestUrl());
+                    break;
+                case REQUEST_BUSINESS_LOGIC:
+                    responseBody = logicMapper.doRequestLogic(httpRequest);
+                    break;
+                default:
+            }
+
             DataOutputStream dos = new DataOutputStream(out);
-            byte[] body = "Hello World".getBytes();
-            response200Header(dos, body.length);
-            responseBody(dos, body);
-        } catch (IOException e) {
+            response200Header(dos, responseBody.length);
+            responseBody(dos, responseBody);
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    public HttpRequest getHttpRequest(InputStream in) throws Exception {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
+        String mainInfo = bufferedReader.readLine();
+        String[] requestInfo = mainInfo.split(" ");
+        String httpMethod = Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new);
+        String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
+
+        return new HttpRequest(httpMethod, requestUrl);
+    }
+
+    private RequestType getRequestType(HttpRequest httpRequest) {
+        String httpMethod = httpRequest.getHttpMethod();
+        String requestUrl = httpRequest.getRequestUrl();
+
+        switch (HttpMethod.valueOf(httpMethod)) {
+            case GET:
+                if(requestUrl.contains("?")) {
+                    return RequestType.REQUEST_BUSINESS_LOGIC;
+                } else if(requestUrl.equals("/") || requestUrl.contains(".")) {
+                    return RequestType.REQUEST_FILE;
+                } else {
+                    return RequestType.REQUEST_BUSINESS_LOGIC;
+                }
+
+            case POST:
+                break;
+        }
+
+        return null;
+    }
+
+    private byte[] getRequestFile(String requestUrl) throws IOException {
+        byte[] result = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
+        return result;
     }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
