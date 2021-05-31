@@ -7,6 +7,7 @@ import util.IOUtils;
 import java.io.*;
 import java.net.Socket;
 import java.util.Optional;
+import java.util.StringTokenizer;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -51,6 +52,23 @@ public class RequestHandler extends Thread {
         String[] requestInfo = mainInfo.split(" ");
         String httpMethod = Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new);
         String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
+
+        if(httpMethod.equals("POST")) {
+            int contentLen = 0;
+            for(String line = bufferedReader.readLine(); (!line.isEmpty() && line!=null); line=bufferedReader.readLine()) {
+                if(line.contains("Content-Length")) {
+                    String[] info = line.split(":");
+                    contentLen = Integer.parseInt(info[1].trim());
+                    break;
+                }
+            }
+
+            if (contentLen > 0) {
+                char[] body = new char[contentLen];
+                bufferedReader.read(body);
+                String params = new String(body);
+            }
+        }
 
         return new HttpRequest(httpMethod, requestUrl);
     }
