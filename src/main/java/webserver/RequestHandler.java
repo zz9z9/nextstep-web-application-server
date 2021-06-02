@@ -2,12 +2,14 @@ package webserver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.HttpRequestUtils;
 import util.IOUtils;
 
-import java.io.*;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Optional;
-import java.util.StringTokenizer;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -24,13 +26,14 @@ public class RequestHandler extends Thread {
         log.debug("New Client Connect! Connected IP : {}, Port : {}", connection.getInetAddress(), connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-            HttpRequest httpRequest = getHttpRequest(in);
-            RequestType rt = getRequestType(httpRequest);
+            HttpRequest httpRequest = HttpRequestUtils.getHttpRequest(in);
+            RequestType rt = HttpRequestUtils.getRequestType(httpRequest);
             byte[] responseBody = {};
 
             switch (rt) {
                 case REQUEST_FILE:
-                    responseBody = getRequestFile(httpRequest.getRequestUrl());
+                    String requestUrl = httpRequest.getRequestUrl();
+                    responseBody = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
                     break;
                 case REQUEST_BUSINESS_LOGIC:
                     responseBody = logicMapper.doRequestLogic(httpRequest);
@@ -44,59 +47,6 @@ public class RequestHandler extends Thread {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-    }
-
-    public HttpRequest getHttpRequest(InputStream in) throws Exception {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
-        String mainInfo = bufferedReader.readLine();
-        String[] requestInfo = mainInfo.split(" ");
-        String httpMethod = Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new);
-        String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
-
-        if(httpMethod.equals("POST")) {
-            int contentLen = 0;
-            for(String line = bufferedReader.readLine(); (!line.isEmpty() && line!=null); line=bufferedReader.readLine()) {
-                if(line.contains("Content-Length")) {
-                    String[] info = line.split(":");
-                    contentLen = Integer.parseInt(info[1].trim());
-                    break;
-                }
-            }
-
-            if (contentLen > 0) {
-                char[] body = new char[contentLen];
-                bufferedReader.read(body);
-                String params = new String(body);
-            }
-        }
-
-        return new HttpRequest(httpMethod, requestUrl);
-    }
-
-    private RequestType getRequestType(HttpRequest httpRequest) {
-        String httpMethod = httpRequest.getHttpMethod();
-        String requestUrl = httpRequest.getRequestUrl();
-
-        switch (HttpMethod.valueOf(httpMethod)) {
-            case GET:
-                if(requestUrl.contains("?")) {
-                    return RequestType.REQUEST_BUSINESS_LOGIC;
-                } else if(requestUrl.equals("/") || requestUrl.contains(".")) {
-                    return RequestType.REQUEST_FILE;
-                } else {
-                    return RequestType.REQUEST_BUSINESS_LOGIC;
-                }
-
-            case POST:
-                break;
-        }
-
-        return null;
-    }
-
-    private byte[] getRequestFile(String requestUrl) throws IOException {
-        byte[] result = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
-        return result;
     }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {

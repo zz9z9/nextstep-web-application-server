@@ -1,6 +1,6 @@
 package webserver;
 
-class HttpRequest {
+public class HttpRequest {
     String httpMethod;
     String requestUrl;
 
