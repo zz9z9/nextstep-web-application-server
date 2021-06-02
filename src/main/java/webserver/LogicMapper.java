@@ -61,7 +61,7 @@ public class LogicMapper {
     }
 
     public byte[] doRequestLogic(HttpRequest httpRequest) throws Exception {
-        HttpMethod httpMethod = HttpMethod.valueOf(httpRequest.getHttpMethod());
+        HttpMethod httpMethod = httpRequest.getHttpMethod();
         String requestUrl = httpRequest.getRequestUrl();
         byte[] response = {};
 

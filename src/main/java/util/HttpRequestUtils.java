@@ -29,10 +29,10 @@ public class HttpRequestUtils {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
         String mainInfo = bufferedReader.readLine();
         String[] requestInfo = mainInfo.split(" ");
-        String httpMethod = Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new);
+        HttpMethod httpMethod = HttpMethod.valueOf(Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new));
         String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
 
-        if(httpMethod.equals("POST")) {
+        if(HttpMethod.POST == httpMethod && bufferedReader.ready()) {
             int contentLen = 0;
             for(String line = bufferedReader.readLine(); (!line.isEmpty() && line!=null); line=bufferedReader.readLine()) {
                 if(line.contains("Content-Length")) {
@@ -53,10 +53,10 @@ public class HttpRequestUtils {
     }
 
     public static RequestType getRequestType(HttpRequest httpRequest) {
-        String httpMethod = httpRequest.getHttpMethod();
+        HttpMethod httpMethod = httpRequest.getHttpMethod();
         String requestUrl = httpRequest.getRequestUrl();
 
-        switch (HttpMethod.valueOf(httpMethod)) {
+        switch (httpMethod) {
             case GET:
                 if(requestUrl.contains("?")) {
                     return RequestType.REQUEST_BUSINESS_LOGIC;
@@ -67,14 +67,14 @@ public class HttpRequestUtils {
                 }
 
             case POST:
-                break;
+                return RequestType.REQUEST_BUSINESS_LOGIC;
         }
 
         return null;
     }
 
     /**
-     * @param queryString은
+     * @param queryString
      *            URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
      * @return
      */
@@ -83,7 +83,7 @@ public class HttpRequestUtils {
     }
 
     /**
-     * @param 쿠키
+     * @param cookies
      *            값은 name1=value1; name2=value2 형식임
      * @return
      */
