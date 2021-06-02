@@ -2,14 +2,19 @@ package util;
 
 import org.junit.Test;
 import util.HttpRequestUtils.Pair;
+import webserver.HttpRequest;
+import webserver.RequestType;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
+import static webserver.HttpMethod.GET;
+import static webserver.HttpMethod.POST;
 
 public class HttpRequestUtilsTest {
     @Test
@@ -74,16 +79,62 @@ public class HttpRequestUtilsTest {
     }
 
     @Test
-    public void getRequestHtmlName() {
-        String httpRequest = "GET /index.html HTTP/1.1";
-        byte[] bytes = httpRequest.getBytes();
-        InputStream in = new ByteArrayInputStream(bytes);
+    public void getRequestFileName() {
+        Map<String, String> requestFile = new HashMap<>();
+        requestFile.put("GET /index.html HTTP/1.1", "/index.html");
+        requestFile.put("GET /css/style.css HTTP/1.1", "/css/style.css");
+        requestFile.put("GET /js/script.js HTTP/1.1", "/js/script.js");
 
         try {
-            String fileName = HttpRequestUtils.getRequestFileName(in);
-            assertThat(fileName, is("/index.html"));
+            for (String httpRequest : requestFile.keySet()) {
+                byte[] bytes = httpRequest.getBytes();
+                InputStream in = new ByteArrayInputStream(bytes);
+                String fileName = HttpRequestUtils.getRequestFileName(in);
+                String answer = requestFile.get(httpRequest);
+
+                assertThat(fileName, is(answer));
+            }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void getHttpRequest() throws Exception {
+        Map<String, HttpRequest> requests = new HashMap<>();
+        String request1 = "GET /index.html HTTP/1.1";
+        String request2 = "POST /user/create HTTP/1.1";
+        requests.put(request1, new HttpRequest(GET, "/index.html"));
+        requests.put(request2, new HttpRequest(POST, "/user/create"));
+
+        for (String req : requests.keySet()) {
+            HttpRequest answer = requests.get(req);
+            HttpRequest getObj = HttpRequestUtils.getHttpRequest(new ByteArrayInputStream(req.getBytes()));
+
+            assertThat(getObj, is(answer));
+        }
+    }
+
+    @Test
+    public void getHttpRequestType() {
+        HttpRequest req1 = new HttpRequest(POST, "/user/create");
+        HttpRequest req2 = new HttpRequest(GET, "/user/info?email=test@test.com");
+        HttpRequest req3 = new HttpRequest(GET, "/user/list");
+        HttpRequest req4 = new HttpRequest(GET, "/index.html");
+        HttpRequest req5 = new HttpRequest(GET, "/");
+        Map<HttpRequest, RequestType> answers = new HashMap<>();
+
+        answers.put(req1, RequestType.REQUEST_BUSINESS_LOGIC);
+        answers.put(req2, RequestType.REQUEST_BUSINESS_LOGIC);
+        answers.put(req3, RequestType.REQUEST_BUSINESS_LOGIC);
+        answers.put(req4, RequestType.REQUEST_FILE);
+        answers.put(req5, RequestType.REQUEST_FILE);
+
+        for(HttpRequest req : answers.keySet()) {
+            RequestType getType = HttpRequestUtils.getRequestType(req);
+            RequestType answer = answers.get(req);
+
+            assertEquals(getType, answer);
         }
     }
 }
