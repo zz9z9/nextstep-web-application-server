@@ -6,10 +6,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import webserver.HttpMethod;
+import webserver.HttpRequest;
+import webserver.RequestType;
 
 public class HttpRequestUtils {
 
@@ -19,6 +23,54 @@ public class HttpRequestUtils {
         String requestFile = requestInfo.split(" ")[1];
 
         return requestFile;
+    }
+
+    public static HttpRequest getHttpRequest(InputStream in) throws Exception {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(in));
+        String mainInfo = bufferedReader.readLine();
+        String[] requestInfo = mainInfo.split(" ");
+        String httpMethod = Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new);
+        String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
+
+        if(httpMethod.equals("POST")) {
+            int contentLen = 0;
+            for(String line = bufferedReader.readLine(); (!line.isEmpty() && line!=null); line=bufferedReader.readLine()) {
+                if(line.contains("Content-Length")) {
+                    String[] info = line.split(":");
+                    contentLen = Integer.parseInt(info[1].trim());
+                    break;
+                }
+            }
+
+            if (contentLen > 0) {
+                char[] body = new char[contentLen];
+                bufferedReader.read(body);
+                String params = new String(body);
+            }
+        }
+
+        return new HttpRequest(httpMethod, requestUrl);
+    }
+
+    public static RequestType getRequestType(HttpRequest httpRequest) {
+        String httpMethod = httpRequest.getHttpMethod();
+        String requestUrl = httpRequest.getRequestUrl();
+
+        switch (HttpMethod.valueOf(httpMethod)) {
+            case GET:
+                if(requestUrl.contains("?")) {
+                    return RequestType.REQUEST_BUSINESS_LOGIC;
+                } else if(requestUrl.equals("/") || requestUrl.contains(".")) {
+                    return RequestType.REQUEST_FILE;
+                } else {
+                    return RequestType.REQUEST_BUSINESS_LOGIC;
+                }
+
+            case POST:
+                break;
+        }
+
+        return null;
     }
 
     /**
