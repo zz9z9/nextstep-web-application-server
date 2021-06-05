@@ -1,15 +1,23 @@
 package webserver;
 
+import java.util.Map;
 import java.util.Objects;
 
 
 public class HttpRequest {
     HttpMethod httpMethod;
     String requestUrl;
+    Map<String, String> params;
 
     public HttpRequest(HttpMethod httpMethod, String requestUrl) {
         this.httpMethod = httpMethod;
         this.requestUrl = requestUrl;
+    }
+
+    public HttpRequest(HttpMethod httpMethod, String requestUrl, Map<String, String> params) {
+        this.httpMethod = httpMethod;
+        this.requestUrl = requestUrl;
+        this.params = params;
     }
 
     public HttpMethod getHttpMethod() {
@@ -18,6 +26,10 @@ public class HttpRequest {
 
     public String getRequestUrl() {
         return requestUrl;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
     }
 
     @Override
