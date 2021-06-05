@@ -47,9 +47,11 @@ public class LogicMapper {
     }
 
     static Map<String, Execution> getMappingUrl = new HashMap<>();
+    static Map<String, Execution> postMappingUrl = new HashMap<>();
 
     public LogicMapper() {
         initGetRequest();
+        initPostRequest();
     }
 
     private void initGetRequest() {
@@ -57,7 +59,7 @@ public class LogicMapper {
     }
 
     private void initPostRequest() {
-
+        postMappingUrl.put("/user/create", new Execution(UserLogic.getInstance(), UserLogic.class, "signup", User.class));
     }
 
     public byte[] doRequestLogic(HttpRequest httpRequest) throws Exception {
@@ -68,7 +70,9 @@ public class LogicMapper {
         switch (httpMethod) {
             case GET:
                 response = requestUrl.contains("?") ? executeMethodWithParamsForGetRequest(requestUrl) : executeMethodWithoutParamsForGetRequest(requestUrl);
-                executeMethodWithParamsForGetRequest(requestUrl);
+                break;
+            case POST:
+                response = executeMethodForPostRequest(httpRequest.getRequestUrl(), httpRequest.getParams());
                 break;
         }
 
@@ -94,15 +98,43 @@ public class LogicMapper {
             });
         }
 
-        execution.getLogicClass().getMethod(execution.getMethodName(), execution.getParamClass()).invoke(execution.getTargetInstance(), instance);
+        execution.getLogicClass()
+                .getMethod(execution.getMethodName(), execution.getParamClass())
+                .invoke(execution.getTargetInstance(), instance);
 
         return "SUCCESS".getBytes();
     }
 
     public byte[] executeMethodWithoutParamsForGetRequest(String requestUrl) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Execution execution = Optional.ofNullable(getMappingUrl.get(requestUrl)).orElseThrow(NoSuchMethodError::new);
-        execution.getLogicClass().getMethod(execution.getMethodName(), execution.getParamClass()).invoke(execution.getTargetInstance());
+
+        execution.getLogicClass()
+                .getMethod(execution.getMethodName(), execution.getParamClass())
+                .invoke(execution.getTargetInstance());
 
         return "SUCCESS".getBytes();
+    }
+
+    public byte[] executeMethodForPostRequest(String requestUrl, Map<String,String> params) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, NoSuchFieldException {
+        Execution execution = Optional.ofNullable(postMappingUrl.get(requestUrl)).orElseThrow(NoSuchMethodError::new);
+        Class paramClass = execution.getParamClass();
+        Object instance = paramClass.getDeclaredConstructor().newInstance();
+
+        for(String key : params.keySet()) {
+            Optional.ofNullable(paramClass.getDeclaredField(key)).ifPresent((field) -> {
+                field.setAccessible(true);
+                try {
+                    field.set(instance, params.get(key));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+        execution.getLogicClass()
+                .getMethod(execution.getMethodName(), execution.getParamClass())
+                .invoke(execution.getTargetInstance(), instance);
+
+        return "POST SUCCESS".getBytes();
     }
 }

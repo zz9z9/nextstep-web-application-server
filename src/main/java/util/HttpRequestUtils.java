@@ -34,19 +34,34 @@ public class HttpRequestUtils {
 
         if(HttpMethod.POST == httpMethod && bufferedReader.ready()) {
             int contentLen = 0;
+            String contentType = "";
+            Map<String, String> params = null;
+
             for(String line = bufferedReader.readLine(); (!line.isEmpty() && line!=null); line=bufferedReader.readLine()) {
                 if(line.contains("Content-Length")) {
                     String[] info = line.split(":");
                     contentLen = Integer.parseInt(info[1].trim());
-                    break;
+                } else if(line.contains("Content-Type")) {
+                    String[] info = line.split(":");
+                    contentType = info[1].trim(); // ex) application/x-www-form-urlencoded
                 }
             }
 
             if (contentLen > 0) {
                 char[] body = new char[contentLen];
                 bufferedReader.read(body);
-                String params = new String(body);
+
+                if(contentType.equals("application/x-www-form-urlencoded")) {
+                    String queryString = new String(body);
+                    params = parseQueryString(queryString);
+                } else if(contentType.equals("application/json")) {
+                    // TODO
+                }
+
+                System.out.println("post params : "+params);
             }
+
+            return new HttpRequest(httpMethod, requestUrl, params);
         }
 
         return new HttpRequest(httpMethod, requestUrl);
