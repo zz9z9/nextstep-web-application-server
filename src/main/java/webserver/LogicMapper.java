@@ -9,10 +9,11 @@ import java.util.Optional;
 
 public class LogicMapper {
     static class Execution <T> {
-        T targetInstance;
-        Class logicClass;
-        String methodName;
-        Class paramClass;
+        private T targetInstance;
+        private Class logicClass;
+        private String methodName;
+        private Class paramClass;
+        private String redirectUrl;
 
         public Execution(T targetInstance, Class logicClass, String methodName) {
             this.targetInstance = targetInstance;
@@ -25,6 +26,14 @@ public class LogicMapper {
             this.logicClass = logicClass;
             this.methodName = methodName;
             this.paramClass = paramClass;
+        }
+
+        public Execution(T targetInstance, Class logicClass, String methodName, Class paramClass, String redirectUrl) {
+            this.targetInstance = targetInstance;
+            this.logicClass = logicClass;
+            this.methodName = methodName;
+            this.paramClass = paramClass;
+            this.redirectUrl = redirectUrl;
         }
 
         public T getTargetInstance() {
@@ -42,6 +51,10 @@ public class LogicMapper {
         public Class getParamClass() {
             return paramClass;
         }
+
+        public String getRedirectUrl() {
+            return redirectUrl;
+        }
     }
 
     private Map<String, Execution> getMappingUrl = new HashMap<>();
@@ -57,10 +70,10 @@ public class LogicMapper {
     }
 
     private void initPostRequest() {
-        postMappingUrl.put("/user/create", new Execution(UserLogic.getInstance(), UserLogic.class, "signup", User.class));
+        postMappingUrl.put("/user/create", new Execution(UserLogic.getInstance(), UserLogic.class, "signup", User.class, "/index.html"));
     }
 
-    public byte[] doRequestLogic(HttpRequest httpRequest) throws Exception {
+    public String doRequestLogic(HttpRequest httpRequest) throws Exception {
         HttpMethod httpMethod = httpRequest.getHttpMethod();
         String requestUrl = httpRequest.getRequestUrl();
         Map<String,String> params = httpRequest.getParams();
@@ -75,12 +88,18 @@ public class LogicMapper {
                 break;
         }
 
-        byte[] response = (params!=null) ? executeMethodWithParams(execution, params) : executeMethodWithoutParams(execution);
+        if(params!=null) {
+            executeMethodWithParams(execution, params);
+        } else {
+            executeMethodWithoutParams(execution);
+        }
 
-        return response;
+        String redirectPage = (execution.getRedirectUrl()!=null) ? execution.getRedirectUrl() : "";
+
+        return redirectPage;
     }
 
-    public byte[] executeMethodWithParams(Execution execution, Map<String,String> params) throws Exception {
+    public void executeMethodWithParams(Execution execution, Map<String,String> params) throws Exception {
         Class paramClass = execution.getParamClass();
         Object instance = paramClass.getDeclaredConstructor().newInstance();
 
@@ -98,15 +117,11 @@ public class LogicMapper {
         execution.getLogicClass()
                 .getMethod(execution.getMethodName(), paramClass)
                 .invoke(execution.getTargetInstance(), instance);
-
-        return "SUCCESS".getBytes();
     }
 
-    public byte[] executeMethodWithoutParams(Execution execution) throws Exception {
+    public void executeMethodWithoutParams(Execution execution) throws Exception {
         execution.getLogicClass()
                 .getMethod(execution.getMethodName(), execution.getParamClass())
                 .invoke(execution.getTargetInstance());
-
-        return "SUCCESS".getBytes();
     }
 }
