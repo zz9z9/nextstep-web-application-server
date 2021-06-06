@@ -1,5 +1,11 @@
 package util;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
+import webserver.HttpMethod;
+import webserver.HttpRequest;
+import webserver.RequestType;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,12 +14,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
-import webserver.HttpMethod;
-import webserver.HttpRequest;
-import webserver.RequestType;
 
 public class HttpRequestUtils {
 
@@ -32,39 +32,54 @@ public class HttpRequestUtils {
         HttpMethod httpMethod = HttpMethod.valueOf(Optional.ofNullable(requestInfo[0]).orElseThrow(Exception::new));
         String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
 
-        if(HttpMethod.POST == httpMethod && bufferedReader.ready()) {
-            int contentLen = 0;
-            String contentType = "";
-            Map<String, String> params = null;
-
-            for(String line = bufferedReader.readLine(); (!line.isEmpty() && line!=null); line=bufferedReader.readLine()) {
-                if(line.contains("Content-Length")) {
-                    String[] info = line.split(":");
-                    contentLen = Integer.parseInt(info[1].trim());
-                } else if(line.contains("Content-Type")) {
-                    String[] info = line.split(":");
-                    contentType = info[1].trim(); // ex) application/x-www-form-urlencoded
-                }
-            }
-
-            if (contentLen > 0) {
-                char[] body = new char[contentLen];
-                bufferedReader.read(body);
-
-                if(contentType.equals("application/x-www-form-urlencoded")) {
-                    String queryString = new String(body);
-                    params = parseQueryString(queryString);
-                } else if(contentType.equals("application/json")) {
-                    // TODO
-                }
-
-                System.out.println("post params : "+params);
-            }
-
-            return new HttpRequest(httpMethod, requestUrl, params);
+        if (HttpMethod.GET == httpMethod) {
+            return processGetRequest(requestUrl);
+        } else if (HttpMethod.POST == httpMethod && bufferedReader.ready()) {
+            return processPostRequest(requestUrl, bufferedReader);
         }
 
         return new HttpRequest(httpMethod, requestUrl);
+    }
+
+    private static HttpRequest processGetRequest(String requestUrl) {
+        if (!requestUrl.contains("?")) {
+            return new HttpRequest(HttpMethod.GET, requestUrl);
+        }
+
+        String[] info = requestUrl.split("\\?");
+        Map<String, String> params = parseQueryString(info[1]);
+
+        return new HttpRequest(HttpMethod.GET, info[0], params);
+    }
+
+    private static HttpRequest processPostRequest(String requestUrl, BufferedReader bufferedReader) throws IOException {
+        int contentLen = 0;
+        String contentType = "";
+        Map<String, String> params = null;
+
+        for (String line = bufferedReader.readLine(); (!line.isEmpty() && line != null); line = bufferedReader.readLine()) {
+            if (line.contains("Content-Length")) {
+                String[] info = line.split(":");
+                contentLen = Integer.parseInt(info[1].trim());
+            } else if (line.contains("Content-Type")) {
+                String[] info = line.split(":");
+                contentType = info[1].trim(); // ex) application/x-www-form-urlencoded
+            }
+        }
+
+        if (contentLen > 0) {
+            char[] body = new char[contentLen];
+            bufferedReader.read(body);
+
+            if (contentType.equals("application/x-www-form-urlencoded")) {
+                String queryString = new String(body);
+                params = parseQueryString(queryString);
+            } else if (contentType.equals("application/json")) {
+                // TODO
+            }
+        }
+
+        return new HttpRequest(HttpMethod.POST, requestUrl, params);
     }
 
     public static RequestType getRequestType(HttpRequest httpRequest) {
@@ -73,9 +88,9 @@ public class HttpRequestUtils {
 
         switch (httpMethod) {
             case GET:
-                if(requestUrl.contains("?")) {
+                if (requestUrl.contains("?")) {
                     return RequestType.REQUEST_BUSINESS_LOGIC;
-                } else if(requestUrl.equals("/") || requestUrl.contains(".")) {
+                } else if (requestUrl.equals("/") || requestUrl.contains(".")) {
                     return RequestType.REQUEST_FILE;
                 } else {
                     return RequestType.REQUEST_BUSINESS_LOGIC;
@@ -89,8 +104,7 @@ public class HttpRequestUtils {
     }
 
     /**
-     * @param queryString
-     *            URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
+     * @param queryString URL에서 ? 이후에 전달되는 field1=value1&field2=value2 형식임
      * @return
      */
     public static Map<String, String> parseQueryString(String queryString) {
@@ -98,8 +112,7 @@ public class HttpRequestUtils {
     }
 
     /**
-     * @param cookies
-     *            값은 name1=value1; name2=value2 형식임
+     * @param cookies 값은 name1=value1; name2=value2 형식임
      * @return
      */
     public static Map<String, String> parseCookies(String cookies) {
