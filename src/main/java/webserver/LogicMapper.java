@@ -2,9 +2,7 @@ package webserver;
 
 import logic.UserLogic;
 import model.User;
-import util.HttpRequestUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -46,8 +44,8 @@ public class LogicMapper {
         }
     }
 
-    static Map<String, Execution> getMappingUrl = new HashMap<>();
-    static Map<String, Execution> postMappingUrl = new HashMap<>();
+    private Map<String, Execution> getMappingUrl = new HashMap<>();
+    private Map<String, Execution> postMappingUrl = new HashMap<>();
 
     public LogicMapper() {
         initGetRequest();
@@ -65,25 +63,24 @@ public class LogicMapper {
     public byte[] doRequestLogic(HttpRequest httpRequest) throws Exception {
         HttpMethod httpMethod = httpRequest.getHttpMethod();
         String requestUrl = httpRequest.getRequestUrl();
-        byte[] response = {};
+        Map<String,String> params = httpRequest.getParams();
+        Execution execution = null;
 
         switch (httpMethod) {
             case GET:
-                response = requestUrl.contains("?") ? executeMethodWithParamsForGetRequest(requestUrl) : executeMethodWithoutParamsForGetRequest(requestUrl);
+                execution = Optional.ofNullable(getMappingUrl.get(requestUrl)).orElseThrow(NoSuchMethodError::new);
                 break;
             case POST:
-                response = executeMethodForPostRequest(httpRequest.getRequestUrl(), httpRequest.getParams());
+                execution = Optional.ofNullable(postMappingUrl.get(requestUrl)).orElseThrow(NoSuchMethodError::new);
                 break;
         }
+
+        byte[] response = (params!=null) ? executeMethodWithParams(execution, params) : executeMethodWithoutParams(execution);
 
         return response;
     }
 
-    public byte[] executeMethodWithParamsForGetRequest(String requestUrl) throws Exception {
-        String[] info = requestUrl.split("\\?");
-        String url = info[0];
-        Map<String, String> params = HttpRequestUtils.parseQueryString(info[1]);
-        Execution execution = Optional.ofNullable(getMappingUrl.get(url)).orElseThrow(NoSuchMethodError::new);
+    public byte[] executeMethodWithParams(Execution execution, Map<String,String> params) throws Exception {
         Class paramClass = execution.getParamClass();
         Object instance = paramClass.getDeclaredConstructor().newInstance();
 
@@ -99,42 +96,17 @@ public class LogicMapper {
         }
 
         execution.getLogicClass()
-                .getMethod(execution.getMethodName(), execution.getParamClass())
+                .getMethod(execution.getMethodName(), paramClass)
                 .invoke(execution.getTargetInstance(), instance);
 
         return "SUCCESS".getBytes();
     }
 
-    public byte[] executeMethodWithoutParamsForGetRequest(String requestUrl) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Execution execution = Optional.ofNullable(getMappingUrl.get(requestUrl)).orElseThrow(NoSuchMethodError::new);
-
+    public byte[] executeMethodWithoutParams(Execution execution) throws Exception {
         execution.getLogicClass()
                 .getMethod(execution.getMethodName(), execution.getParamClass())
                 .invoke(execution.getTargetInstance());
 
         return "SUCCESS".getBytes();
-    }
-
-    public byte[] executeMethodForPostRequest(String requestUrl, Map<String,String> params) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, NoSuchFieldException {
-        Execution execution = Optional.ofNullable(postMappingUrl.get(requestUrl)).orElseThrow(NoSuchMethodError::new);
-        Class paramClass = execution.getParamClass();
-        Object instance = paramClass.getDeclaredConstructor().newInstance();
-
-        for(String key : params.keySet()) {
-            Optional.ofNullable(paramClass.getDeclaredField(key)).ifPresent((field) -> {
-                field.setAccessible(true);
-                try {
-                    field.set(instance, params.get(key));
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            });
-        }
-
-        execution.getLogicClass()
-                .getMethod(execution.getMethodName(), execution.getParamClass())
-                .invoke(execution.getTargetInstance(), instance);
-
-        return "POST SUCCESS".getBytes();
     }
 }
