@@ -6,9 +6,9 @@ public enum HttpMethod {
     DELETE("DELETE"),
     PUT("PUT");
 
-    String httpMethod;
+    private String methodType;
 
-    HttpMethod(String httpMethod) {
-        this.httpMethod = httpMethod;
+    HttpMethod(String methodType) {
+        this.methodType = methodType;
     }
 }
