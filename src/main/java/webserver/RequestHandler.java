@@ -14,7 +14,7 @@ import java.net.Socket;
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private static final String indexPage = "/index.html";
-    private static final LogicMapper logicMapper = new LogicMapper();
+    private static final RequestLogicMapper REQUEST_LOGIC_MAPPER = new RequestLogicMapper();
 
     private Socket connection;
 
@@ -37,20 +37,31 @@ public class RequestHandler extends Thread {
                     responseBody = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
                     response2xxHeader(dos, responseBody.length);
                     break;
+
                 case REQUEST_BUSINESS_LOGIC:
-                    String redirectPage = logicMapper.doRequestLogic(httpRequest);
-                    if(!redirectPage.isEmpty()) {
-                        String redirectUrl = "http://localhost:8080"+redirectPage; // TODO : 하드코딩 말고 request origin으로 ??
-                        response3xxHeader(dos, redirectUrl);
-                    } else {
-                        response2xxHeader(dos, responseBody.length); // 화면측에서 리다이렉트 하도록
+                    ExecutionResult result = REQUEST_LOGIC_MAPPER.doRequestLogic(httpRequest);
+
+                    switch (result.getResponseType()) {
+                        case HTML_PAGE:
+                            String redirectPage = (String) result.getReturnData();
+                            String redirectUrl = "http://localhost:8080"+redirectPage; // TODO : 하드코딩 말고 request origin으로 ??
+                            response3xxHeader(dos, redirectUrl);
+                            break;
+
+                        case DATA:
+                            break;
+
+                        case EMPTY:
+                            response2xxHeader(dos, responseBody.length);
+                            break;
                     }
+
                     break;
-                default:
             }
 
             responseBody(dos, responseBody);
         } catch (Exception e) {
+            e.printStackTrace();
             log.error(e.getMessage());
         }
     }
