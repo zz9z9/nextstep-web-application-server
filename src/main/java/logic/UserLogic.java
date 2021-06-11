@@ -13,7 +13,18 @@ public class UserLogic {
         return userLogic;
     }
 
-    public void signup(User user) {
+    public String signup(User user) {
         DataBase.addUser(user);
+        return "/index.html";
+    }
+
+    public String login(String id, String pw) {
+        User findUser = DataBase.findUserById(id);
+
+        if(findUser!=null && pw.equals(findUser.getPassword())) {
+            return "/index.html";
+        }
+
+        return "/user/login_failed.html";
     }
 }
