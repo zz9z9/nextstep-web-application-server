@@ -6,7 +6,6 @@ import util.HttpRequestUtils;
 import util.IOUtils;
 
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -29,69 +28,46 @@ public class RequestHandler extends Thread {
             HttpRequest httpRequest = HttpRequestUtils.getHttpRequest(in);
             RequestType rt = HttpRequestUtils.getRequestType(httpRequest);
             DataOutputStream dos = new DataOutputStream(out);
+            HttpResponse httpResponse = new HttpResponse(dos);
             byte[] responseBody = {};
 
             switch (rt) {
                 case REQUEST_FILE:
                     String requestUrl = httpRequest.getRequestUrl();
                     responseBody = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
-                    response2xxHeader(dos, responseBody.length);
+
+                    httpResponse.setStatusCode(HttpStatusCode2xx.OK);
+                    httpResponse.setHeader("Content-Type", "text/html;charset=utf-8");
+                    httpResponse.setHeader("Content-Length", responseBody.length);
+                    //response2xxHeader(dos, responseBody.length);
                     break;
 
                 case REQUEST_BUSINESS_LOGIC:
-                    ExecutionResult result = REQUEST_LOGIC_MAPPER.doRequestLogic(httpRequest);
+                    ExecutionResult result = REQUEST_LOGIC_MAPPER.doRequestLogic(httpRequest, httpResponse);
 
                     switch (result.getResponseType()) {
                         case HTML_PAGE:
                             String redirectPage = (String) result.getReturnData();
-                            String redirectUrl = "http://localhost:8080"+redirectPage; // TODO : 하드코딩 말고 request origin으로 ??
-                            response3xxHeader(dos, redirectUrl);
+                            String redirectUrl = "http://localhost:8080"+redirectPage; // TODO : 하드코딩 말고 request origin으로 ?
+                            httpResponse.setHeader("Location", redirectUrl);
                             break;
 
                         case DATA:
                             break;
 
                         case EMPTY:
-                            response2xxHeader(dos, responseBody.length);
+                            httpResponse.setStatusCode(HttpStatusCode2xx.OK);
+                            httpResponse.setHeader("Content-Type", "text/html;charset=utf-8");
+                            httpResponse.setHeader("Content-Length", responseBody.length);
                             break;
                     }
-
                     break;
             }
 
-            responseBody(dos, responseBody);
+            httpResponse.terminateHeader();
+            httpResponse.setBody(responseBody);
         } catch (Exception e) {
             e.printStackTrace();
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response2xxHeader(DataOutputStream dos, int lengthOfBodyContent) {
-        try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response3xxHeader(DataOutputStream dos, String redirectUrl) {
-        try {
-            dos.writeBytes("HTTP/1.1 302 Found \r\n");
-            dos.writeBytes("Location : "+redirectUrl);
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void responseBody(DataOutputStream dos, byte[] body) {
-        try {
-            dos.write(body, 0, body.length);
-            dos.flush();
-        } catch (IOException e) {
             log.error(e.getMessage());
         }
     }

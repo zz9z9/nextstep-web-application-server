@@ -42,7 +42,7 @@ public class RequestLogicMapper {
         postMappingUrl.put("/user/login", new Execution("login", ResponseType.HTML_PAGE));
     }
 
-    public ExecutionResult doRequestLogic(HttpRequest httpRequest) throws Exception {
+    public ExecutionResult doRequestLogic(HttpRequest httpRequest, HttpResponse httpResponse) throws Exception {
         HttpMethod httpMethod = httpRequest.getHttpMethod();
         String requestUrl = httpRequest.getRequestUrl();
         Map<String,String> params = httpRequest.getParams();
@@ -57,14 +57,31 @@ public class RequestLogicMapper {
                 break;
         }
 
-        ExecutionResult result = (params!=null) ? executeMethodWithParams(execution, params) : executeMethodWithoutParams(execution);
+        switch (execution.getResponseType()) {
+            case HTML_PAGE:
+                httpResponse.setStatusCode(HttpStatusCode3xx.REDIRECTION);
+                break;
+            case DATA:
+                httpResponse.setStatusCode(HttpStatusCode2xx.OK);
+        }
+
+        ExecutionResult result = (params!=null) ? executeMethodWithParams(execution, params, httpResponse) : executeMethodWithoutParams(execution);
 
         return result;
     }
 
-    public ExecutionResult executeMethodWithParams(Execution execution, Map<String,String> params) throws Exception {
-        Method logic = logicExecutor.getClass().getMethod(execution.getMethodName(), Map.class);
-        Object returnObj = logic.invoke(logicExecutor, params);
+    public ExecutionResult executeMethodWithParams(Execution execution, Map<String,String> params, HttpResponse httpResponse) throws Exception {
+        Method logic;
+        Object returnObj;
+        try {
+            logic = logicExecutor.getClass().getMethod(execution.getMethodName(), Map.class);
+            returnObj = logic.invoke(logicExecutor, params);
+        } catch (NoSuchMethodException e) {
+            logic = logicExecutor.getClass().getMethod(execution.getMethodName(), Map.class, HttpResponse.class);
+            returnObj = logic.invoke(logicExecutor, params, httpResponse);
+        }
+
+
 
         return new ExecutionResult(execution.getResponseType(), returnObj);
     }

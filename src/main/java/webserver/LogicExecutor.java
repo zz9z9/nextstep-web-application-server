@@ -3,6 +3,7 @@ package webserver;
 import logic.UserLogic;
 import model.User;
 
+import java.io.IOException;
 import java.util.Map;
 
 public class LogicExecutor {
@@ -27,11 +28,11 @@ public class LogicExecutor {
         return userLogic.signup(newUser);
     }
 
-    public String login(Map<String, String> params) {
+    public String login(Map<String, String> params, HttpResponse response) throws IOException {
         String id = params.get("userId");
         String pw = params.get("password");
 
-        return userLogic.login(id,pw);
+        return userLogic.login(id,pw,response);
     }
 
 }
