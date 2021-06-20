@@ -35,6 +35,7 @@ public class RequestLogicMapper {
 
     private void initGetRequest() {
         getMappingUrl.put("/user/create", new Execution("signup", ResponseType.HTML_PAGE));
+        getMappingUrl.put("/user/list", new Execution("getUserList", ResponseType.HTML_PAGE));
     }
 
     private void initPostRequest() {
@@ -65,11 +66,12 @@ public class RequestLogicMapper {
                 httpResponse.setStatusCode(HttpStatusCode2xx.OK);
         }
 
-        ExecutionResult result = (params!=null) ? executeMethodWithParams(execution, params, httpResponse) : executeMethodWithoutParams(execution);
+        ExecutionResult result = (params!=null) ? executeMethodWithParams(execution, params, httpResponse) : executeMethodWithoutParams(execution, httpRequest);
 
         return result;
     }
 
+    // TODO : catch (NoSuchMethodException e) 이 방식 말고, 유연하게 다양한 파리미터 가진 로직 메서드에 대응할 수 있도록 수정하기
     public ExecutionResult executeMethodWithParams(Execution execution, Map<String,String> params, HttpResponse httpResponse) throws Exception {
         Method logic;
         Object returnObj;
@@ -81,14 +83,21 @@ public class RequestLogicMapper {
             returnObj = logic.invoke(logicExecutor, params, httpResponse);
         }
 
-
-
         return new ExecutionResult(execution.getResponseType(), returnObj);
     }
 
-    public ExecutionResult executeMethodWithoutParams(Execution execution) throws Exception {
-        Method logic = logicExecutor.getClass().getMethod(execution.getMethodName());
-        Object returnObj = logic.invoke(logicExecutor);
+    // TODO : catch (NoSuchMethodException e) 이 방식 말고, 유연하게 다양한 파리미터 가진 로직 메서드에 대응할 수 있도록 수정하기
+    public ExecutionResult executeMethodWithoutParams(Execution execution, HttpRequest httpRequest) throws Exception {
+        Method logic;
+        Object returnObj;
+
+        try {
+           logic = logicExecutor.getClass().getMethod(execution.getMethodName());
+           returnObj = logic.invoke(logicExecutor);
+        } catch (NoSuchMethodException e) {
+            logic = logicExecutor.getClass().getMethod(execution.getMethodName(), HttpRequest.class);
+            returnObj = logic.invoke(logicExecutor, httpRequest);
+        }
 
         return new ExecutionResult(execution.getResponseType(), returnObj);
     }

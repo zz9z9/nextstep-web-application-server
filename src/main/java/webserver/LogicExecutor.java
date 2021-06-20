@@ -35,4 +35,8 @@ public class LogicExecutor {
         return userLogic.login(id,pw,response);
     }
 
+    public String getUserList(HttpRequest httpRequest) throws IOException {
+        return userLogic.getUserList(httpRequest);
+    }
+
 }

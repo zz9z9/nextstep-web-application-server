@@ -2,6 +2,7 @@ package logic;
 
 import db.DataBase;
 import model.User;
+import webserver.HttpRequest;
 import webserver.HttpResponse;
 
 import java.io.IOException;
@@ -24,11 +25,19 @@ public class UserLogic {
     public String login(String id, String pw, HttpResponse response) throws IOException {
         User findUser = DataBase.findUserById(id);
         if(findUser!=null && pw.equals(findUser.getPassword())) {
-            response.setCookie("logined=true");
+            response.setCookie("logined=true; Path=/");
             return "/index.html";
         }
 
         response.setCookie("logined=false");
         return "/user/login_failed.html";
+    }
+
+    public String getUserList(HttpRequest request) {
+        String isLogined = request.getCookie("logined");
+        if(isLogined!=null && isLogined.equals("true")) {
+            return "/user/list.html";
+        }
+        return "/user/login.html";
     }
 }
