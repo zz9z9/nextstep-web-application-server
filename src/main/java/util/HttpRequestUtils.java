@@ -33,7 +33,7 @@ public class HttpRequestUtils {
         String requestUrl = Optional.ofNullable(requestInfo[1]).orElseThrow(Exception::new);
 
         if (HttpMethod.GET == httpMethod) {
-            return processGetRequest(requestUrl);
+            return processGetRequest(requestUrl, bufferedReader);
         } else if (HttpMethod.POST == httpMethod && bufferedReader.ready()) {
             return processPostRequest(requestUrl, bufferedReader);
         }
@@ -41,21 +41,32 @@ public class HttpRequestUtils {
         return new HttpRequest(httpMethod, requestUrl);
     }
 
-    private static HttpRequest processGetRequest(String requestUrl) {
+    private static HttpRequest processGetRequest(String requestUrl, BufferedReader bufferedReader) throws IOException {
+        Map<String, String> cookies = null;
+
+        for (String line = bufferedReader.readLine(); (!line.isEmpty() && line != null); line = bufferedReader.readLine()) {
+            if (line.contains("Cookie")) {
+                String[] info = line.split(":");
+                cookies = parseCookies(info[1]);
+                break;
+            }
+        }
+
         if (!requestUrl.contains("?")) {
-            return new HttpRequest(HttpMethod.GET, requestUrl);
+            return new HttpRequest(HttpMethod.GET, requestUrl, cookies);
         }
 
         String[] info = requestUrl.split("\\?");
         Map<String, String> params = parseQueryString(info[1]);
 
-        return new HttpRequest(HttpMethod.GET, info[0], params);
+        return new HttpRequest(HttpMethod.GET, info[0], params, cookies);
     }
 
     private static HttpRequest processPostRequest(String requestUrl, BufferedReader bufferedReader) throws IOException {
         int contentLen = 0;
         String contentType = "";
         Map<String, String> params = null;
+        Map<String, String> cookies = null;
 
         for (String line = bufferedReader.readLine(); (!line.isEmpty() && line != null); line = bufferedReader.readLine()) {
             if (line.contains("Content-Length")) {
@@ -64,6 +75,9 @@ public class HttpRequestUtils {
             } else if (line.contains("Content-Type")) {
                 String[] info = line.split(":");
                 contentType = info[1].trim(); // ex) application/x-www-form-urlencoded
+            } else if (line.contains("Cookie")) {
+                String[] info = line.split(":");
+                cookies = parseCookies(info[1]);
             }
         }
 
@@ -79,7 +93,7 @@ public class HttpRequestUtils {
             }
         }
 
-        return new HttpRequest(HttpMethod.POST, requestUrl, params);
+        return new HttpRequest(HttpMethod.POST, requestUrl, params, cookies);
     }
 
     public static RequestType getRequestType(HttpRequest httpRequest) {
