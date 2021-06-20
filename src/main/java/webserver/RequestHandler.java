@@ -35,9 +35,16 @@ public class RequestHandler extends Thread {
                 case REQUEST_FILE:
                     String requestUrl = httpRequest.getRequestUrl();
                     responseBody = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
+                    String contentType = "text/html;charset=utf-8";
+
+                    if(requestUrl.contains(".css")) {
+                        contentType = "text/css";
+                    } else if(requestUrl.contains(".js")) {
+                        contentType = "application/javascript";
+                    }
 
                     httpResponse.setStatusCode(HttpStatusCode2xx.OK);
-                    httpResponse.setHeader("Content-Type", "text/html;charset=utf-8");
+                    httpResponse.setHeader("Content-Type", contentType);
                     httpResponse.setHeader("Content-Length", responseBody.length);
                     //response2xxHeader(dos, responseBody.length);
                     break;
