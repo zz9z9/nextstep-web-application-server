@@ -1,4 +1,4 @@
-package webserver;
+package webserver.response;
 
 public class ExecutionResult {
     private ResponseType responseType;

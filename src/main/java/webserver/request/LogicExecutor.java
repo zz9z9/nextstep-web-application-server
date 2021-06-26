@@ -1,7 +1,9 @@
-package webserver;
+package webserver.request;
 
 import logic.UserLogic;
 import model.User;
+import webserver.http.HttpRequest;
+import webserver.http.HttpResponse;
 
 import java.io.IOException;
 import java.util.Map;

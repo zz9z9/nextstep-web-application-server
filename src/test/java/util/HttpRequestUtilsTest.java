@@ -2,8 +2,8 @@ package util;
 
 import org.junit.Test;
 import util.HttpRequestUtils.Pair;
-import webserver.HttpRequest;
-import webserver.RequestType;
+import webserver.http.HttpRequest;
+import webserver.request.RequestType;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -13,8 +13,8 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
-import static webserver.HttpMethod.GET;
-import static webserver.HttpMethod.POST;
+import static webserver.http.HttpMethod.GET;
+import static webserver.http.HttpMethod.POST;
 
 public class HttpRequestUtilsTest {
     @Test

@@ -1,4 +1,4 @@
-package webserver;
+package webserver.http;
 
 public enum HttpStatusCode3xx implements HttpStatusCode{
     REDIRECTION("302 Found");

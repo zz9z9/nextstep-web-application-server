@@ -1,4 +1,4 @@
-package webserver;
+package webserver.request;
 
 public enum RequestType {
     REQUEST_FILE,

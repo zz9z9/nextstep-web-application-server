@@ -2,9 +2,9 @@ package util;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import webserver.HttpMethod;
-import webserver.HttpRequest;
-import webserver.RequestType;
+import webserver.http.HttpMethod;
+import webserver.http.HttpRequest;
+import webserver.request.RequestType;
 
 import java.io.BufferedReader;
 import java.io.IOException;

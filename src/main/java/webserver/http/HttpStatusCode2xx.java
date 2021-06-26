@@ -1,4 +1,4 @@
-package webserver;
+package webserver.http;
 
 public enum HttpStatusCode2xx implements HttpStatusCode {
     OK("200 OK");

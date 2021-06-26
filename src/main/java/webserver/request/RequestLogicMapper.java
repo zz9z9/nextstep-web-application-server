@@ -1,4 +1,8 @@
-package webserver;
+package webserver.request;
+
+import webserver.response.ExecutionResult;
+import webserver.response.ResponseType;
+import webserver.http.*;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
