@@ -22,8 +22,12 @@ public class UserLogic {
         return "/index.html";
     }
 
+    public User findUser(String id) {
+        return DataBase.findUserById(id);
+    }
+
     public String login(String id, String pw, HttpResponse response) throws IOException {
-        User findUser = DataBase.findUserById(id);
+        User findUser = findUser(id);
         if(findUser!=null && pw.equals(findUser.getPassword())) {
             response.setCookie("logined=true; Path=/");
             return "/index.html";
