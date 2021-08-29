@@ -17,7 +17,7 @@ import java.net.Socket;
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private static final String indexPage = "/index.html";
-    private static final RequestLogicMapper REQUEST_LOGIC_MAPPER = new RequestLogicMapper();
+    private static final RequestLogicMapper requestLogicMapper = new RequestLogicMapper();
 
     private Socket connection;
 
@@ -30,13 +30,13 @@ public class RequestHandler extends Thread {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             HttpRequest httpRequest = HttpRequestUtils.getHttpRequest(in);
-            RequestType rt = HttpRequestUtils.getRequestType(httpRequest);
+            RequestType requestType = HttpRequestUtils.getRequestType(httpRequest);
             DataOutputStream dos = new DataOutputStream(out);
             HttpResponse httpResponse = new HttpResponse(dos);
             byte[] responseBody = {};
 
-            switch (rt) {
-                case REQUEST_FILE:
+            switch (requestType) {
+                case REQUEST_STATIC_RESOURCE:
                     String requestUrl = httpRequest.getRequestUrl();
                     responseBody = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
                     String contentType = "text/html;charset=utf-8";
@@ -50,11 +50,10 @@ public class RequestHandler extends Thread {
                     httpResponse.setStatusCode(HttpStatusCode2xx.OK);
                     httpResponse.setHeader("Content-Type", contentType);
                     httpResponse.setHeader("Content-Length", responseBody.length);
-                    //response2xxHeader(dos, responseBody.length);
                     break;
 
                 case REQUEST_BUSINESS_LOGIC:
-                    ExecutionResult result = REQUEST_LOGIC_MAPPER.doRequestLogic(httpRequest, httpResponse);
+                    ExecutionResult result = requestLogicMapper.doRequestLogic(httpRequest, httpResponse);
 
                     switch (result.getResponseType()) {
                         case HTML_PAGE:

@@ -127,8 +127,8 @@ public class HttpRequestUtilsTest {
         answers.put(req1, RequestType.REQUEST_BUSINESS_LOGIC);
         answers.put(req2, RequestType.REQUEST_BUSINESS_LOGIC);
         answers.put(req3, RequestType.REQUEST_BUSINESS_LOGIC);
-        answers.put(req4, RequestType.REQUEST_FILE);
-        answers.put(req5, RequestType.REQUEST_FILE);
+        answers.put(req4, RequestType.REQUEST_STATIC_RESOURCE);
+        answers.put(req5, RequestType.REQUEST_STATIC_RESOURCE);
 
         for(HttpRequest req : answers.keySet()) {
             RequestType getType = HttpRequestUtils.getRequestType(req);

@@ -105,7 +105,7 @@ public class HttpRequestUtils {
                 if (requestUrl.contains("?")) {
                     return RequestType.REQUEST_BUSINESS_LOGIC;
                 } else if (requestUrl.equals("/") || requestUrl.contains(".")) {
-                    return RequestType.REQUEST_FILE;
+                    return RequestType.REQUEST_STATIC_RESOURCE;
                 } else {
                     return RequestType.REQUEST_BUSINESS_LOGIC;
                 }
