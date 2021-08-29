@@ -29,20 +29,20 @@ public class RequestLogicMapper {
     }
 
     private LogicExecutor logicExecutor = LogicExecutor.getInstance();
-    private Map<String, Execution> getMappingUrl = new HashMap<>();
-    private Map<String, Execution> postMappingUrl = new HashMap<>();
+    private static Map<String, Execution> getMappingUrl = new HashMap<>();
+    private static Map<String, Execution> postMappingUrl = new HashMap<>();
 
-    public RequestLogicMapper() {
+    static {
         initGetRequest();
         initPostRequest();
     }
 
-    private void initGetRequest() {
+    private static void initGetRequest() {
         getMappingUrl.put("/user/create", new Execution("signup", ResponseType.HTML_PAGE));
         getMappingUrl.put("/user/list", new Execution("getUserList", ResponseType.HTML_PAGE));
     }
 
-    private void initPostRequest() {
+    private static void initPostRequest() {
         postMappingUrl.put("/user/create", new Execution("signup", ResponseType.HTML_PAGE));
         postMappingUrl.put("/user/login", new Execution("login", ResponseType.HTML_PAGE));
     }
