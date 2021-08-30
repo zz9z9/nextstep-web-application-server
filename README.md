@@ -3,5 +3,5 @@
 * 베이스 코드 : https://github.com/slipp/web-application-server 
 
 ## Chapter04 : HTTP 웹 서버 구현을 통해 HTTP 이해하기
-* 고민한 내용들 : [링크](https://github.com/zz9z9/javaweb-nextstep/tree/master/src/main/java/com/javaweb/nextstep/chap04)
+* 고민한 내용들 : [링크](https://zz9z9.github.io/posts/nextstep-toy-webserver/)
 
