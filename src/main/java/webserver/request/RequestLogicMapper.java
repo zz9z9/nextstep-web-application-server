@@ -1,8 +1,8 @@
 package webserver.request;
 
+import webserver.http.*;
 import webserver.response.ExecutionResult;
 import webserver.response.ResponseType;
-import webserver.http.*;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -17,7 +17,7 @@ public class RequestLogicMapper {
         public Execution(String methodName, ResponseType responseType) {
             this.methodName = methodName;
             this.responseType = responseType;
-        }
+       }
 
         public String getMethodName() {
             return methodName;
@@ -50,7 +50,6 @@ public class RequestLogicMapper {
     public ExecutionResult doRequestLogic(HttpRequest httpRequest, HttpResponse httpResponse) throws Exception {
         HttpMethod httpMethod = httpRequest.getHttpMethod();
         String requestUrl = httpRequest.getRequestUrl();
-        Map<String,String> params = httpRequest.getParams();
         Execution execution = null;
 
         switch (httpMethod) {
@@ -64,44 +63,28 @@ public class RequestLogicMapper {
 
         switch (execution.getResponseType()) {
             case HTML_PAGE:
-                httpResponse.setStatusCode(HttpStatusCode3xx.REDIRECTION);
+                httpResponse.setStatusCode(HttpStatusCode3xx.Found);
                 break;
             case DATA:
                 httpResponse.setStatusCode(HttpStatusCode2xx.OK);
         }
 
-        ExecutionResult result = (params!=null) ? executeMethodWithParams(execution, params, httpResponse) : executeMethodWithoutParams(execution, httpRequest);
+        Map<String, String> params = httpRequest.getParams();
+        ExecutionResult result = (params != null) ? executeMethodWithParams(execution, params, httpRequest, httpResponse) : executeMethodWithoutParams(execution, httpRequest, httpResponse);
 
         return result;
     }
 
-    // TODO : catch (NoSuchMethodException e) 이 방식 말고, 유연하게 다양한 파리미터 가진 로직 메서드에 대응할 수 있도록 수정하기
-    public ExecutionResult executeMethodWithParams(Execution execution, Map<String,String> params, HttpResponse httpResponse) throws Exception {
-        Method logic;
-        Object returnObj;
-        try {
-            logic = logicExecutor.getClass().getMethod(execution.getMethodName(), Map.class);
-            returnObj = logic.invoke(logicExecutor, params);
-        } catch (NoSuchMethodException e) {
-            logic = logicExecutor.getClass().getMethod(execution.getMethodName(), Map.class, HttpResponse.class);
-            returnObj = logic.invoke(logicExecutor, params, httpResponse);
-        }
+    public ExecutionResult executeMethodWithParams(Execution execution, Map<String, String> params, HttpRequest request, HttpResponse response) throws Exception {
+        Method logic = logicExecutor.getClass().getMethod(execution.getMethodName(), Map.class, HttpRequest.class, HttpResponse.class);
+        Object returnObj = logic.invoke(logicExecutor, params, request, response);
 
         return new ExecutionResult(execution.getResponseType(), returnObj);
     }
 
-    // TODO : catch (NoSuchMethodException e) 이 방식 말고, 유연하게 다양한 파리미터 가진 로직 메서드에 대응할 수 있도록 수정하기
-    public ExecutionResult executeMethodWithoutParams(Execution execution, HttpRequest httpRequest) throws Exception {
-        Method logic;
-        Object returnObj;
-
-        try {
-           logic = logicExecutor.getClass().getMethod(execution.getMethodName());
-           returnObj = logic.invoke(logicExecutor);
-        } catch (NoSuchMethodException e) {
-            logic = logicExecutor.getClass().getMethod(execution.getMethodName(), HttpRequest.class);
-            returnObj = logic.invoke(logicExecutor, httpRequest);
-        }
+    public ExecutionResult executeMethodWithoutParams(Execution execution, HttpRequest request, HttpResponse response) throws Exception {
+        Method logic = logicExecutor.getClass().getMethod(execution.getMethodName(), HttpRequest.class, HttpResponse.class);
+        Object returnObj = logic.invoke(logicExecutor, request, response);;
 
         return new ExecutionResult(execution.getResponseType(), returnObj);
     }

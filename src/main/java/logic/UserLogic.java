@@ -33,7 +33,7 @@ public class UserLogic {
             return "/index.html";
         }
 
-        response.setCookie("logined=false");
+        response.setCookie("logined=false; Path=/");
         return "/user/login_failed.html";
     }
 

@@ -20,7 +20,7 @@ public class LogicExecutor {
 
     private UserLogic userLogic = UserLogic.getInstance();
 
-    public String signup(Map<String, String> params) {
+    public String signup(Map<String, String> params, HttpRequest request, HttpResponse reponse) {
         String id = params.get("userId");
         String pw = params.get("password");
         String name = params.get("name");
@@ -30,14 +30,14 @@ public class LogicExecutor {
         return userLogic.signup(newUser);
     }
 
-    public String login(Map<String, String> params, HttpResponse response) throws IOException {
+    public String login(Map<String, String> params, HttpRequest request, HttpResponse response) throws IOException {
         String id = params.get("userId");
         String pw = params.get("password");
 
         return userLogic.login(id,pw,response);
     }
 
-    public String getUserList(HttpRequest httpRequest) throws IOException {
+    public String getUserList(HttpRequest httpRequest, HttpResponse response) throws IOException {
         return userLogic.getUserList(httpRequest);
     }
 
