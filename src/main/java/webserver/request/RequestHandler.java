@@ -39,7 +39,7 @@ public class RequestHandler extends Thread {
                 case REQUEST_STATIC_RESOURCE:
                     String requestUrl = httpRequest.getRequestUrl();
                     responseBody = (requestUrl.equals("/")) ? IOUtils.convertFileToByte(indexPage) : IOUtils.convertFileToByte(requestUrl);
-                    String contentType = "text/html;charset=utf-8";
+                    String contentType = "text/html; charset=utf-8";
 
                     if(requestUrl.contains(".css")) {
                         contentType = "text/css";
